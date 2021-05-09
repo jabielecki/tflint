@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
 
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -66,9 +69,17 @@ type RuleConfig struct {
 
 // PluginConfig is a TFLint's plugin config
 type PluginConfig struct {
-	Name    string   `hcl:"name,label"`
-	Enabled bool     `hcl:"enabled"`
-	Body    hcl.Body `hcl:",remain"`
+	Name    string `hcl:"name,label"`
+	Enabled bool   `hcl:"enabled"`
+	Version string `hcl:"version,optional"`
+	Source  string `hcl:"source,optional"`
+	Keyring string `hcl:"keyring,optional"`
+
+	Body hcl.Body `hcl:",remain"`
+
+	// Parsed source attributes
+	SourceOwner string
+	SourceRepo  string
 
 	// file is the result of parsing the HCL file that declares the plugin configuration.
 	file *hcl.File
@@ -306,6 +317,10 @@ plugin "aws" {
 	}
 	for _, plugin := range cfg.Plugins {
 		plugin.file = f
+
+		if err := plugin.validate(); err != nil {
+			return nil, err
+		}
 	}
 
 	log.Printf("[DEBUG] Config loaded")
@@ -431,4 +446,53 @@ func configBodyRange(body hcl.Body) hcl.Range {
 		}
 	}
 	return bodyRange
+}
+
+// ManuallyInstalled returns whether the plugin should be installed manually.
+// If the source or version is not specified, you will have to install it manually.
+func (c *PluginConfig) ManuallyInstalled() bool {
+	return c.Version == "" || c.Source == ""
+}
+
+// InstallPath returns an installation path from the plugin directory.
+func (c *PluginConfig) InstallPath() string {
+	return filepath.Join(c.Source, c.Version, fmt.Sprintf("tflint-ruleset-%s", c.Name))
+}
+
+// TagName returns a tag name of GitHub releases.
+// The version must not contain leading "v", as the prefix "v" is added here,
+// and the plugin release tag must be in a format similar to v1.1.1.
+func (c *PluginConfig) TagName() string {
+	return fmt.Sprintf("v%s", c.Version)
+}
+
+// AssetName returns a name of GitHub release asset.
+// The name of plugin release asset must be in a format similar to `tflint-ruleset-aws_darwin_amd64.zip`
+func (c *PluginConfig) AssetName() string {
+	return fmt.Sprintf("tflint-ruleset-%s_%s_%s.zip", c.Name, runtime.GOOS, runtime.GOARCH)
+}
+
+func (c *PluginConfig) validate() error {
+	if c.Version != "" && c.Source == "" {
+		return fmt.Errorf("plugin `%s`: `source` attribute cannot be omitted when specifying `version`", c.Name)
+	}
+
+	if c.Source != "" {
+		if c.Version == "" {
+			return fmt.Errorf("plugin `%s`: `version` attribute cannot be omitted when specifying `source`", c.Name)
+		}
+
+		parts := strings.Split(c.Source, "/")
+		// Expected `github.com/owner/repo` format
+		if len(parts) != 3 {
+			return fmt.Errorf("plugin `%s`: `source` is invalid. Must be in the format `github.com/owner/repo`", c.Name)
+		}
+		if parts[0] != "github.com" {
+			return fmt.Errorf("plugin `%s`: `source` is invalid. Hostname must be `github.com`", c.Name)
+		}
+		c.SourceOwner = parts[1]
+		c.SourceRepo = parts[2]
+	}
+
+	return nil
 }
