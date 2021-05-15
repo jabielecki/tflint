@@ -25,10 +25,11 @@ func Discovery(config *tflint.Config) (*Plugin, error) {
 	rulesets := map[string]*tfplugin.Client{}
 
 	for _, cfg := range config.Plugins {
-		pluginPath, err := FindPluginPath(cfg)
+		installCfg := NewInstallConfig(cfg)
+		pluginPath, err := FindPluginPath(installCfg)
 		var cmd *exec.Cmd
 		if os.IsNotExist(err) {
-			if cfg.Name == "aws" && cfg.ManuallyInstalled() {
+			if cfg.Name == "aws" && installCfg.ManuallyInstalled() {
 				log.Print("[INFO] Plugin `aws` is not installed, but bundled plugins are available.")
 				self, err := os.Executable()
 				if err != nil {
@@ -36,7 +37,7 @@ func Discovery(config *tflint.Config) (*Plugin, error) {
 				}
 				cmd = exec.Command(self, "--act-as-aws-plugin")
 			} else {
-				if cfg.ManuallyInstalled() {
+				if installCfg.ManuallyInstalled() {
 					pluginDir, err := getPluginDir()
 					if err != nil {
 						return nil, err
@@ -76,7 +77,7 @@ func Discovery(config *tflint.Config) (*Plugin, error) {
 }
 
 // FindPluginPath returns the plugin binary path.
-func FindPluginPath(config *tflint.PluginConfig) (string, error) {
+func FindPluginPath(config *InstallConfig) (string, error) {
 	dir, err := getPluginDir()
 	if err != nil {
 		return "", err

@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
-	"runtime"
 	"strings"
 
 	hcl "github.com/hashicorp/hcl/v2"
@@ -446,30 +444,6 @@ func configBodyRange(body hcl.Body) hcl.Range {
 		}
 	}
 	return bodyRange
-}
-
-// ManuallyInstalled returns whether the plugin should be installed manually.
-// If the source or version is not specified, you will have to install it manually.
-func (c *PluginConfig) ManuallyInstalled() bool {
-	return c.Version == "" || c.Source == ""
-}
-
-// InstallPath returns an installation path from the plugin directory.
-func (c *PluginConfig) InstallPath() string {
-	return filepath.Join(c.Source, c.Version, fmt.Sprintf("tflint-ruleset-%s", c.Name))
-}
-
-// TagName returns a tag name of GitHub releases.
-// The version must not contain leading "v", as the prefix "v" is added here,
-// and the plugin release tag must be in a format similar to v1.1.1.
-func (c *PluginConfig) TagName() string {
-	return fmt.Sprintf("v%s", c.Version)
-}
-
-// AssetName returns a name of GitHub release asset.
-// The name of plugin release asset must be in a format similar to `tflint-ruleset-aws_darwin_amd64.zip`
-func (c *PluginConfig) AssetName() string {
-	return fmt.Sprintf("tflint-ruleset-%s_%s_%s.zip", c.Name, runtime.GOOS, runtime.GOARCH)
 }
 
 func (c *PluginConfig) validate() error {

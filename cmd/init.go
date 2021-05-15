@@ -16,16 +16,18 @@ func (cli *CLI) init(opts Options) int {
 	}
 
 	for _, pluginCfg := range cfg.Plugins {
+		installCfg := tfplugin.NewInstallConfig(pluginCfg)
+
 		// If version or source is not set, you need to install it manually
-		if pluginCfg.ManuallyInstalled() {
+		if installCfg.ManuallyInstalled() {
 			continue
 		}
 
-		_, err := tfplugin.FindPluginPath(pluginCfg)
+		_, err := tfplugin.FindPluginPath(installCfg)
 		if os.IsNotExist(err) {
 			fmt.Fprintf(cli.outStream, "Installing `%s` plugin...\n", pluginCfg.Name)
 
-			_, err = tfplugin.Install(pluginCfg)
+			_, err = installCfg.Install()
 			if err != nil {
 				cli.formatter.Print(tflint.Issues{}, tflint.NewContextError("Failed to install a plugin", err), map[string][]byte{})
 				return ExitCodeError
