@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/fatih/color"
 	tfplugin "github.com/terraform-linters/tflint/plugin"
 	"github.com/terraform-linters/tflint/tflint"
 )
@@ -26,6 +27,11 @@ func (cli *CLI) init(opts Options) int {
 		_, err := tfplugin.FindPluginPath(installCfg)
 		if os.IsNotExist(err) {
 			fmt.Fprintf(cli.outStream, "Installing `%s` plugin...\n", pluginCfg.Name)
+
+			sigchecker := tfplugin.NewSignatureChecker(installCfg)
+			if !sigchecker.HasSigningKey() {
+				color.New(color.FgYellow).Fprintln(cli.outStream, "No signing key configured. Set `signing_key` to verify that the release is signed by the plugin developer")
+			}
 
 			_, err = installCfg.Install()
 			if err != nil {

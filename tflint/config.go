@@ -67,11 +67,11 @@ type RuleConfig struct {
 
 // PluginConfig is a TFLint's plugin config
 type PluginConfig struct {
-	Name    string `hcl:"name,label"`
-	Enabled bool   `hcl:"enabled"`
-	Version string `hcl:"version,optional"`
-	Source  string `hcl:"source,optional"`
-	Keyring string `hcl:"keyring,optional"`
+	Name       string `hcl:"name,label"`
+	Enabled    bool   `hcl:"enabled"`
+	Version    string `hcl:"version,optional"`
+	Source     string `hcl:"source,optional"`
+	SigningKey string `hcl:"signing_key,optional"`
 
 	Body hcl.Body `hcl:",remain"`
 
