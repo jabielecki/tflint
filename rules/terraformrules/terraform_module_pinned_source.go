@@ -63,14 +63,14 @@ var ReGenericGit = regexp.MustCompile("(git://(.+)/(.+))|(git::https://(.+)/(.+)
 var reSemverReference = regexp.MustCompile("\\?ref=v?\\d+\\.\\d+\\.\\d+$")
 var reSemverRevision = regexp.MustCompile("\\?rev=v?\\d+\\.\\d+\\.\\d+$")
 
-var subReHost = "([^.:/\\\\]{1,63})(\\.[^.:/\\\\]{1,63})+"
+var subReHost = "([^.:/\\\\]{1,63})(\\.[^.:/\\\\]{1,63})*"
 var subReName = "[0-9a-z](?:[0-9a-z_-]{0,62}[0-9a-z])?"
 var subReProvider = "[0-9a-z]{1,64}"
 
 // ReRegistry is a regular expression that matches the lowercased tf registry source
 // (for example "azure/vnet/azurerm" or "example.com/my/module/aws").
 var ReRegistry = regexp.MustCompile(
-	fmt.Sprintf("^(%s(:\\d+)?)?(%s)\\/(%s)\\/(%s)(\\/\\/.*)?$",
+	fmt.Sprintf("^(%s(:\\d+)?\\/)?(%s)\\/(%s)\\/(%s)(\\/\\/.*)?$",
 		subReHost, subReName, subReName, subReProvider))
 
 // Check checks if module source version is pinned

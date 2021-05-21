@@ -571,6 +571,42 @@ module "local" {
 			Expected: tflint.Issues{},
 		},
 		{
+			Name: "Private registry module is not pinned",
+			Content: `
+module "unpinned" {
+  source = "example.com:8443/myorg/mymodule/aws//my/path"
+}`,
+			Expected: tflint.Issues{
+				{
+					Rule:    NewTerraformModulePinnedSourceRule(),
+					Message: "Module source \"example.com:8443/myorg/mymodule/aws//my/path\" version \"\" is not pinned",
+					Range: hcl.Range{
+						Filename: "module.tf",
+						Start:    hcl.Pos{Line: 3, Column: 12},
+						End:      hcl.Pos{Line: 3, Column: 58},
+					},
+				},
+			},
+		},
+		{
+			Name: "Private registry module is not pinned when hostname has no domain",
+			Content: `
+module "unpinned" {
+  source = "localhost/myorg/mymodule/aws"
+}`,
+			Expected: tflint.Issues{
+				{
+					Rule:    NewTerraformModulePinnedSourceRule(),
+					Message: "Module source \"localhost/myorg/mymodule/aws\" version \"\" is not pinned",
+					Range: hcl.Range{
+						Filename: "module.tf",
+						Start:    hcl.Pos{Line: 3, Column: 12},
+						End:      hcl.Pos{Line: 3, Column: 42},
+					},
+				},
+			},
+		},
+		{
 			Name: "Registry module is not pinned",
 			Content: `
 module "unpinned" {
