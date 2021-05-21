@@ -63,6 +63,16 @@ var ReGenericGit = regexp.MustCompile("(git://(.+)/(.+))|(git::https://(.+)/(.+)
 var reSemverReference = regexp.MustCompile("\\?ref=v?\\d+\\.\\d+\\.\\d+$")
 var reSemverRevision = regexp.MustCompile("\\?rev=v?\\d+\\.\\d+\\.\\d+$")
 
+var subReHost = "([^.:/\\\\]{1,63})(\\.[^.:/\\\\]{1,63})+"
+var subReName = "[0-9a-z](?:[0-9a-z_-]{0,62}[0-9a-z])?"
+var subReProvider = "[0-9a-z]{1,64}"
+
+// ReRegistry is a regular expression that matches the lowercased tf registry source
+// (for example "azure/vnet/azurerm" or "example.com/my/module/aws").
+var ReRegistry = regexp.MustCompile(
+	fmt.Sprintf("^(%s(:\\d+)?)?(%s)\\/(%s)\\/(%s)(\\/\\/.*)?$",
+		subReHost, subReName, subReName, subReProvider))
+
 // Check checks if module source version is pinned
 // Note that this rule is valid only for Git or Mercurial source
 func (r *TerraformModulePinnedSourceRule) Check(runner *tflint.Runner) error {
@@ -96,6 +106,8 @@ func (r *TerraformModulePinnedSourceRule) Check(runner *tflint.Runner) error {
 			err = r.checkBitbucketSource(runner, module, config)
 		} else if strings.HasPrefix(lower, "hg::") {
 			err = r.checkMercurialSource(runner, module, config)
+		} else if ReRegistry.MatchString(lower) {
+			err = r.checkRegistrySource(runner, module, config)
 		}
 
 		if err != nil {
@@ -212,6 +224,20 @@ func (r *TerraformModulePinnedSourceRule) checkRevSource(runner *tflint.Runner, 
 		}
 	default:
 		return fmt.Errorf("`%s` is invalid style", config.Style)
+	}
+
+	return nil
+}
+
+func (r *TerraformModulePinnedSourceRule) checkRegistrySource(runner *tflint.Runner, module *configs.ModuleCall, config terraformModulePinnedSourceRuleConfig) error {
+	lower := strings.ToLower(module.Version.Required.String())
+
+	if len(lower) == 0 {
+		runner.EmitIssue(
+			r,
+			fmt.Sprintf("Module source \"%s\" version \"%s\" is not pinned", module.SourceAddr, module.Version.Required.String()),
+			module.SourceAddrRange,
+		)
 	}
 
 	return nil

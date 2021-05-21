@@ -554,6 +554,33 @@ rule "terraform_module_pinned_source" {
 				},
 			},
 		},
+		{
+			Name: "Registry module is not pinned",
+			Content: `
+module "unpinned" {
+  source = "Azure/vnet/azurerm"
+}`,
+			Expected: tflint.Issues{
+				{
+					Rule:    NewTerraformModulePinnedSourceRule(),
+					Message: "Module source \"Azure/vnet/azurerm\" version \"\" is not pinned",
+					Range: hcl.Range{
+						Filename: "module.tf",
+						Start:    hcl.Pos{Line: 3, Column: 12},
+						End:      hcl.Pos{Line: 3, Column: 32},
+					},
+				},
+			},
+		},
+		{
+			Name: "Registry module is pinned",
+			Content: `
+module "pinned" {
+source = "Azure/vnet/azurerm"
+version = "0.0.0"
+}`,
+			Expected: tflint.Issues{},
+		},
 	}
 
 	rule := NewTerraformModulePinnedSourceRule()
