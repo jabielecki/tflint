@@ -555,6 +555,22 @@ rule "terraform_module_pinned_source" {
 			},
 		},
 		{
+			Name: "local module on Windows",
+			Content: `
+module "local" {
+  source = ".\\WINDOWS\\SysWOW64"
+}`,
+			Expected: tflint.Issues{},
+		},
+		{
+			Name: "local module on linux",
+			Content: `
+module "local" {
+  source = "../modules/myfavorite"
+}`,
+			Expected: tflint.Issues{},
+		},
+		{
 			Name: "Registry module is not pinned",
 			Content: `
 module "unpinned" {
